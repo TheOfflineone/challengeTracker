@@ -30,18 +30,39 @@
       grid-gap: 20px;
       width: 95%;
       max-height: 90vh;
+      overflow-y: auto;
     }
     
     .main-content {
       grid-column: 1;
+      overflow-y: auto;
+      padding-right: 15px;
     }
     
     .controls-container {
       grid-column: 2;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: space-between;
+      height: 100%;
+    }
+    
+    .controls {
+      display: flex;
+      flex-direction: column;
       gap: 30px;
+    }
+    
+    .top-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    
+    .bottom-controls {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 30px;
     }
     
     h1 {
@@ -130,17 +151,9 @@
       display: block;
     }
     
-    .controls {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 30px;
-      height: 100%;
-    }
-    
     button { 
-      padding: 30px 15px; 
-      font-size: 32px;
+      padding: 20px 15px; 
+      font-size: 26px;
       font-weight: 600;
       cursor: pointer;
       border-radius: 16px;
@@ -156,7 +169,7 @@
     #startBtn { 
       background: linear-gradient(145deg, #4CAF50, #43a047);
       color: white;
-      font-size: 32px;
+      font-size: 26px;
     }
     
     #startBtn:hover {
@@ -173,7 +186,7 @@
     #stopBtn { 
       background: linear-gradient(145deg, #f44336, #e53935);
       color: white;
-      font-size: 32px;
+      font-size: 26px;
     }
     
     #stopBtn:hover {
@@ -190,12 +203,123 @@
     #resetBtn { 
       background: linear-gradient(145deg, #e0e0e0, #cccccc);
       color: #333;
-      font-size: 32px;
+      font-size: 20px;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: auto;
+      padding: 10px 20px;
+      z-index: 100;
+      opacity: 0.7;
     }
     
     #resetBtn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+      opacity: 1;
+    }
+    
+    #newChallengeBtn {
+      background: linear-gradient(145deg, #3498db, #2980b9);
+      color: white;
+      font-size: 26px;
+    }
+    
+    #newChallengeBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    .challenge-input {
+      display: flex;
+      margin-bottom: 15px;
+      gap: 10px;
+    }
+    
+    .challenge-input input {
+      flex-grow: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #e0e0e0;
+      font-size: 16px;
+      font-family: 'Montserrat', sans-serif;
+    }
+    
+    .challenge-input button {
+      padding: 12px;
+      margin: 0;
+      font-size: 16px;
+      width: auto;
+    }
+    
+    .challenge-list {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    
+    .challenge-item {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .challenge-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .challenge-active {
+      background-color: rgba(44, 119, 77, 0.1);
+      border-left: 4px solid #2c7;
+    }
+    
+    .challenge-complete {
+      opacity: 0.7;
+      text-decoration: line-through;
+    }
+    
+    .challenge-name {
+      font-weight: 600;
+      flex-grow: 1;
+    }
+    
+    .challenge-time {
+      font-family: monospace;
+      background-color: #2c3e50;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 18px;
+      margin: 0 10px;
+    }
+    
+    .challenge-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .challenge-actions button {
+      padding: 5px 10px;
+      font-size: 14px;
+      margin: 0;
+      border-radius: 5px;
+    }
+    
+    .total-time {
+      background-color: #2c3e50;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-top: 20px;
+      font-size: 20px;
+      text-align: center;
     }
   </style>
 </head>
@@ -208,17 +332,31 @@
         <div class="equals-sign">=</div>
         <div id="preisgeld">100.00 €</div>
       </div>
+      
+      <div class="challenge-input">
+        <input type="text" id="challengeInput" placeholder="Neue Challenge eingeben...">
+        <button id="addChallengeBtn" class="add-btn">Hinzufügen</button>
+      </div>
+      
+      <div class="challenge-list" id="challengeList">
+        <!-- Challenge-Einträge werden hier dynamisch eingefügt -->
+      </div>
+      
       <canvas id="graph" width="800" height="400"></canvas>
     </div>
     
     <div class="controls-container">
-      <div class="controls">
+      <div class="top-controls">
         <button id="startBtn">Start</button>
         <button id="stopBtn" disabled>Stop</button>
-        <button id="resetBtn">Reset</button>
+      </div>
+      <div class="bottom-controls">
+        <button id="newChallengeBtn">Nächste Challenge</button>
       </div>
     </div>
   </div>
+  
+  <button id="resetBtn">Reset</button>
 
   <script>
     // DOM-Elemente
@@ -231,6 +369,10 @@
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const newChallengeBtn = document.getElementById('newChallengeBtn');
+    const challengeInput = document.getElementById('challengeInput');
+    const addChallengeBtn = document.getElementById('addChallengeBtn');
+    const challengeList = document.getElementById('challengeList');
     
     // Variablen für die Stoppuhr
     let startTime = 0;
@@ -238,6 +380,11 @@
     let timerInterval;
     let isRunning = false;
     let currentPosition = { x: 0, y: 0 };
+    
+    // Speicherung der Challenges
+    let challenges = [];
+    let activeChallenge = null;
+    let totalTimeMs = 0;
     
     // Parameter für die Preisberechnung (wie in GeoGebra)
     const maxPreisgeld = 100;
@@ -354,34 +501,32 @@
       ctx.lineWidth = 3;
       ctx.stroke();
       
-      // Aktuellen Punkt zeichnen wenn Timer läuft
-      if (elapsedTime > 0) {
-        const secs = elapsedTime / 1000;
-        const preis = berechnePreisgeld(secs);
+      // Aktuellen Punkt zeichnen für die Gesamtzeit
+      const totalSeconds = totalTimeMs / 1000 + (isRunning ? elapsedTime / 1000 : 0);
+      const totalPreis = berechnePreisgeld(totalSeconds);
+      
+      currentPosition.x = 50 + (totalSeconds * pixelProSekunde);
+      currentPosition.y = canvas.height - 50 - (totalPreis * 2.5);
+      
+      if (currentPosition.x <= canvas.width - 20) {
+        // Schatten
+        ctx.beginPath();
+        ctx.arc(currentPosition.x, currentPosition.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(244, 67, 54, 0.3)';
+        ctx.fill();
         
-        currentPosition.x = 50 + (secs * pixelProSekunde);
-        currentPosition.y = canvas.height - 50 - (preis * 2.5);
+        // Punkt
+        ctx.beginPath();
+        ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#f44336';
+        ctx.fill();
         
-        if (currentPosition.x <= canvas.width - 20) {
-          // Schatten
-          ctx.beginPath();
-          ctx.arc(currentPosition.x, currentPosition.y, 10, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(244, 67, 54, 0.3)';
-          ctx.fill();
-          
-          // Punkt
-          ctx.beginPath();
-          ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
-          ctx.fillStyle = '#f44336';
-          ctx.fill();
-          
-          // Weißer Rand
-          ctx.beginPath();
-          ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
-          ctx.strokeStyle = 'white';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
+        // Weißer Rand
+        ctx.beginPath();
+        ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
     }
     
@@ -410,11 +555,176 @@
       const currentTime = Date.now();
       elapsedTime = currentTime - startTime;
       
-      timerEl.textContent = formatTime(elapsedTime);
+      // Aktuellen Timer für die aktive Challenge in den Challenge-Einträgen aktualisieren
+      if (activeChallenge !== null && challenges[activeChallenge]) {
+        challenges[activeChallenge].time = elapsedTime;
+        updateChallengeItem(activeChallenge);
+      }
       
-      const seconds = elapsedTime / 1000;
-      updateFormel(seconds);
-      const preis = berechnePreisgeld(seconds);
+      // Gesamtzeit berechnen
+      const totalWithCurrentMs = totalTimeMs + elapsedTime;
+      
+      // Gesamtzeit im Timer anzeigen
+      timerEl.textContent = formatTime(totalWithCurrentMs);
+      
+      // Formel und Preisgeld aktualisieren basierend auf der Gesamtzeit
+      const totalSeconds = totalWithCurrentMs / 1000;
+      updateFormel(totalSeconds);
+      const preis = berechnePreisgeld(totalSeconds);
+      preisEl.textContent = formatPreisgeld(preis);
+      
+      zeichneGraph();
+    }
+    
+    // Challenge hinzufügen
+    function addChallenge(name) {
+      challenges.push({
+        name: name,
+        time: 0,
+        completed: false
+      });
+      
+      renderChallenges();
+    }
+    
+    // Challenges rendern
+    function renderChallenges() {
+      challengeList.innerHTML = '';
+      
+      challenges.forEach((challenge, index) => {
+        const item = document.createElement('div');
+        item.className = 'challenge-item';
+        
+        if (index === activeChallenge) {
+          item.classList.add('challenge-active');
+        }
+        
+        if (challenge.completed) {
+          item.classList.add('challenge-complete');
+        }
+        
+        item.innerHTML = `
+          <span class="challenge-name">${challenge.name}</span>
+          <span class="challenge-time">${formatTime(challenge.time)}</span>
+        `;
+        
+        // Klick auf Challenge-Item aktiviert die Challenge
+        item.addEventListener('click', () => {
+          if (!challenge.completed) {
+            activeChallenge = index;
+            elapsedTime = challenges[index].time;
+            timerEl.textContent = formatTime(totalTimeMs + elapsedTime);
+            renderChallenges();
+          }
+        });
+        
+        challengeList.appendChild(item);
+      });
+    }
+    
+    // Challenge-Item aktualisieren
+    function updateChallengeItem(index) {
+      const item = challengeList.children[index];
+      if (item) {
+        const timeEl = item.querySelector('.challenge-time');
+        if (timeEl) {
+          timeEl.textContent = formatTime(challenges[index].time);
+        }
+      }
+    }
+    
+    // Challenge starten
+    function startChallenge(index) {
+      // Wenn eine andere Challenge läuft, stoppe sie
+      if (isRunning) {
+        stopCurrentChallenge();
+      }
+      
+      // Challenge aktivieren
+      activeChallenge = index;
+      startTime = Date.now();
+      elapsedTime = challenges[index].time;
+      isRunning = true;
+      timerInterval = setInterval(updateTimer, 100);
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      
+      renderChallenges();
+    }
+    
+    // Aktuelle Challenge stoppen
+    function stopCurrentChallenge() {
+      if (isRunning && activeChallenge !== null) {
+        isRunning = false;
+        clearInterval(timerInterval);
+        
+        // Zeit der Challenge aktualisieren
+        challenges[activeChallenge].time = elapsedTime;
+        
+        // Buttons aktualisieren
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        
+        renderChallenges();
+      }
+    }
+    
+    // Challenge als fertig markieren
+    function completeChallenge(index) {
+      // Wenn es die aktive Challenge ist, stoppe sie
+      if (index === activeChallenge && isRunning) {
+        stopCurrentChallenge();
+      }
+      
+      // Challenge als abgeschlossen markieren
+      challenges[index].completed = true;
+      
+      // Zeit zur Gesamtzeit hinzufügen
+      totalTimeMs += challenges[index].time;
+      
+      // Wenn das die aktive Challenge war, zurücksetzen
+      if (index === activeChallenge) {
+        activeChallenge = null;
+        elapsedTime = 0;
+      }
+      
+      // UI aktualisieren
+      renderChallenges();
+      updatePreisgeldAndGraph();
+    }
+    
+    // Zur nächsten Challenge wechseln
+    function nextChallenge() {
+      // Aktuelle Challenge fertigstellen, wenn eine läuft
+      if (activeChallenge !== null) {
+        completeChallenge(activeChallenge);
+      }
+      
+      // Finde die nächste nicht abgeschlossene Challenge
+      const nextIndex = challenges.findIndex(c => !c.completed);
+      
+      if (nextIndex !== -1) {
+        activeChallenge = nextIndex;
+        elapsedTime = challenges[nextIndex].time;
+        timerEl.textContent = formatTime(elapsedTime);
+        renderChallenges();
+      } else {
+        // Alle Challenges sind abgeschlossen
+        activeChallenge = null;
+        elapsedTime = 0;
+        timerEl.textContent = '00:00.0';
+      }
+    }
+    
+    // Preisgeld und Graph basierend auf Gesamtzeit aktualisieren
+    function updatePreisgeldAndGraph() {
+      const totalSeconds = totalTimeMs / 1000;
+      
+      // Gesamtzeit im Timer anzeigen
+      timerEl.textContent = formatTime(totalTimeMs);
+      
+      updateFormel(totalSeconds);
+      const preis = berechnePreisgeld(totalSeconds);
       preisEl.textContent = formatPreisgeld(preis);
       
       zeichneGraph();
@@ -423,33 +733,71 @@
     // Event-Handler
     startBtn.addEventListener('click', () => {
       if (!isRunning) {
-        isRunning = true;
-        startTime = Date.now() - elapsedTime;
-        timerInterval = setInterval(updateTimer, 100);
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+        if (activeChallenge === null && challenges.length > 0) {
+          // Finde die erste nicht abgeschlossene Challenge
+          const nextIndex = challenges.findIndex(c => !c.completed);
+          if (nextIndex !== -1) {
+            activeChallenge = nextIndex;
+          }
+        }
+        
+        if (activeChallenge !== null) {
+          isRunning = true;
+          startTime = Date.now() - challenges[activeChallenge].time;
+          elapsedTime = challenges[activeChallenge].time;
+          timerInterval = setInterval(updateTimer, 100);
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+          renderChallenges();
+        }
       }
     });
     
     stopBtn.addEventListener('click', () => {
-      if (isRunning) {
-        isRunning = false;
-        clearInterval(timerInterval);
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-      }
+      stopCurrentChallenge();
     });
     
     resetBtn.addEventListener('click', () => {
+      // Zurücksetzen des Timers
       isRunning = false;
       clearInterval(timerInterval);
+      
+      // Alle Challenges zurücksetzen
+      challenges = [];
+      activeChallenge = null;
+      totalTimeMs = 0;
       elapsedTime = 0;
+      
+      // UI aktualisieren
       timerEl.textContent = '00:00.0';
       updateFormel(0);
       preisEl.textContent = formatPreisgeld(maxPreisgeld);
+      
       startBtn.disabled = false;
       stopBtn.disabled = true;
+      
+      renderChallenges();
       zeichneGraph();
+    });
+    
+    newChallengeBtn.addEventListener('click', nextChallenge);
+    
+    addChallengeBtn.addEventListener('click', () => {
+      const name = challengeInput.value.trim();
+      if (name) {
+        addChallenge(name);
+        challengeInput.value = '';
+      }
+    });
+    
+    challengeInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const name = challengeInput.value.trim();
+        if (name) {
+          addChallenge(name);
+          challengeInput.value = '';
+        }
+      }
     });
     
     // Initialisierung
