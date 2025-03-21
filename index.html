@@ -273,6 +273,7 @@
       cursor: grab;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       position: relative;
+      touch-action: none; /* Verhindert Scrolling während Touch-Drag */
     }
     
     .challenge-item:hover {
@@ -710,6 +711,13 @@
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragend', handleDragEnd);
         
+        // Touch-Event-Handler für mobile Geräte
+        if (!challenge.completed && !challenge.hasBeenStarted) {
+          item.addEventListener('touchstart', handleTouchStart);
+          item.addEventListener('touchmove', handleTouchMove);
+          item.addEventListener('touchend', handleTouchEnd);
+        }
+        
         challengeList.appendChild(item);
       });
       
@@ -736,6 +744,7 @@
     // Drag-and-Drop-Funktionen
     let draggedItem = null;
     let draggedIndex = -1;
+    let touchY = 0;
     
     function handleDragStart(e) {
       // Wenn eine Challenge läuft oder bereits begonnen wurde, verhindern wir das Ziehen
@@ -1110,6 +1119,162 @@
     // Initialisierung
     updateFormel(0);
     preisEl.textContent = formatPreisgeld(maxPreisgeld);
+    
+    // Touch-Event-Handler für mobile Geräte
+    function handleTouchStart(e) {
+      if ((isRunning && this.dataset.index == activeChallenge) || 
+          challenges[this.dataset.index].hasBeenStarted) {
+        return;
+      }
+      
+      e.preventDefault(); // Verhindert Scrollen
+      
+      draggedItem = this;
+      draggedIndex = parseInt(this.dataset.index);
+      touchY = e.touches[0].clientY;
+      
+      setTimeout(() => {
+        this.classList.add('dragging');
+      }, 0);
+    }
+    
+    function handleTouchMove(e) {
+      if (!draggedItem) return;
+      
+      e.preventDefault(); // Verhindert Scrollen während Drag
+      
+      const currentY = e.touches[0].clientY;
+      const items = Array.from(challengeList.querySelectorAll('.challenge-item:not(.dragging)'));
+      
+      // Entferne vorhandene Platzhalter
+      const existingPlaceholders = document.querySelectorAll('.drag-placeholder');
+      existingPlaceholders.forEach(ph => ph.remove());
+      
+      if (items.length === 0) return;
+      
+      // Finde das nächste Element
+      const afterElement = getAfterElement(challengeList, currentY);
+      
+      // Prüfe, ob das Element nach einer abgeschlossenen Challenge oder 
+      // nach einer bereits gestarteten Challenge platziert werden würde
+      if (afterElement) {
+        const afterIndex = parseInt(afterElement.dataset.index);
+        const afterIsCompleted = challenges[afterIndex].completed;
+        const afterHasBeenStarted = challenges[afterIndex].hasBeenStarted;
+        
+        // Wenn das Element nach einer abgeschlossenen oder gestarteten Challenge platziert werden würde,
+        // suche nach einem geeigneten Platz vor diesen Challenges
+        if (afterIsCompleted || afterHasBeenStarted) {
+          // Finde das letzte Element, das weder abgeschlossen noch gestartet wurde
+          const lastMovableIndex = findLastMovableIndex();
+          if (lastMovableIndex !== -1) {
+            const lastMovableItem = Array.from(challengeList.children).find(
+              item => parseInt(item.dataset.index) === lastMovableIndex
+            );
+            if (lastMovableItem) {
+              // Platzhalter nach dem letzten bewegbaren Element einfügen
+              challengeList.insertBefore(createPlaceholder(), lastMovableItem.nextSibling);
+              return;
+            }
+          }
+        }
+      }
+      
+      // Füge Platzhalter ein
+      if (afterElement) {
+        challengeList.insertBefore(createPlaceholder(), afterElement);
+      } else {
+        // Prüfe, ob es abgeschlossene oder gestartete Challenges gibt
+        const firstUnmovableIndex = challenges.findIndex(c => c.completed || c.hasBeenStarted);
+        if (firstUnmovableIndex !== -1 && firstUnmovableIndex < challenges.length - 1) {
+          const firstUnmovableItem = Array.from(challengeList.children).find(
+            item => parseInt(item.dataset.index) === firstUnmovableIndex
+          );
+          if (firstUnmovableItem) {
+            challengeList.insertBefore(createPlaceholder(), firstUnmovableItem);
+            return;
+          }
+        }
+        
+        challengeList.appendChild(createPlaceholder());
+      }
+    }
+    
+    function handleTouchEnd(e) {
+      if (!draggedItem) return;
+      
+      this.classList.remove('dragging');
+      
+      // Entferne alle Platzhalter
+      const placeholders = document.querySelectorAll('.drag-placeholder');
+      if (placeholders.length > 0) {
+        // Finde die Zielposition
+        const afterElement = getAfterElement(challengeList, e.changedTouches[0].clientY);
+        const items = Array.from(challengeList.querySelectorAll('.challenge-item'));
+        
+        let targetIndex;
+        
+        if (afterElement) {
+          targetIndex = parseInt(afterElement.dataset.index);
+          
+          // Prüfe, ob das Ziel eine abgeschlossene oder gestartete Challenge ist
+          if (challenges[targetIndex].completed || challenges[targetIndex].hasBeenStarted) {
+            // Finde den letzten bewegbaren Index
+            const lastMovableIndex = findLastMovableIndex();
+            
+            if (lastMovableIndex !== -1) {
+              // Setze Target-Index auf nach dem letzten bewegbaren Element
+              targetIndex = lastMovableIndex + 1;
+              if (targetIndex > draggedIndex) targetIndex--;
+            } else {
+              // Wenn keine bewegbaren Elemente vorhanden sind, setze Target-Index auf 0
+              targetIndex = 0;
+            }
+          } else if (targetIndex > draggedIndex) {
+            targetIndex--;
+          }
+        } else {
+          // Prüfe, ob es abgeschlossene oder gestartete Challenges gibt
+          const firstUnmovableIndex = challenges.findIndex(c => c.completed || c.hasBeenStarted);
+          
+          if (firstUnmovableIndex !== -1) {
+            // Setze Target-Index auf den Index vor der ersten unveränderlichen Challenge
+            targetIndex = firstUnmovableIndex - 1;
+          } else {
+            // Wenn keine unveränderlichen Challenges vorhanden sind, setze Target-Index auf das Ende
+            targetIndex = challenges.length - 1;
+          }
+        }
+        
+        // Verschiebe das Element in der challenges-Array
+        if (draggedIndex !== targetIndex) {
+          const [movedChallenge] = challenges.splice(draggedIndex, 1);
+          challenges.splice(targetIndex, 0, movedChallenge);
+          
+          // Aktualisiere activeChallenge-Index, falls nötig
+          if (activeChallenge === draggedIndex) {
+            activeChallenge = targetIndex;
+          } else if (activeChallenge > draggedIndex && activeChallenge <= targetIndex) {
+            activeChallenge--;
+          } else if (activeChallenge < draggedIndex && activeChallenge >= targetIndex) {
+            activeChallenge++;
+          }
+          
+          // Nach Verschieben die erste nicht abgeschlossene Challenge aktivieren
+          const firstIncompleteIndex = challenges.findIndex(c => !c.completed);
+          if (firstIncompleteIndex !== -1) {
+            activeChallenge = firstIncompleteIndex;
+            elapsedTime = challenges[firstIncompleteIndex].time;
+          }
+          
+          renderChallenges();
+        }
+      }
+      
+      placeholders.forEach(placeholder => placeholder.remove());
+      draggedItem = null;
+      draggedIndex = -1;
+    }
     
     // Einfache Initialisierung
     setTimeout(function() {
