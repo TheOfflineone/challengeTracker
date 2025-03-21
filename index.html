@@ -64,44 +64,49 @@
       border-radius: 3px;
     }
     
+    .time-formula-price-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 15px;
+    }
+    
     #timer { 
-      font-size: 80px;
+      font-size: 60px;
       font-weight: 700;
-      margin: 20px 0;
       color: #2c3e50;
       text-shadow: 0 2px 5px rgba(0,0,0,0.05);
       padding: 15px;
       border-radius: 8px;
       background: linear-gradient(145deg, #f0f0f0, #ffffff);
       display: inline-block;
-      width: 320px;
       text-align: center;
+      width: 220px;
     }
     
     #formel { 
       font-size: 22px; 
-      margin: 0 15px; 
       font-family: "Times New Roman", Times, serif;
       padding: 15px;
       display: inline-block;
       background-color: #f8f9fa;
       border-radius: 8px;
       box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
-      width: 200px;
       text-align: center;
+      width: 180px;
     }
     
     #preisgeld { 
       font-size: 46px; 
       font-weight: 600;
-      margin: 0 15px; 
       color: #2c7;
       text-shadow: 0 2px 5px rgba(44,119,77,0.2);
       transition: color 0.3s ease;
       display: inline-block;
       vertical-align: middle;
-      width: 240px;
       text-align: center;
+      width: 200px;
     }
     
     .equals-sign {
@@ -188,21 +193,13 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0,0,0,0.15);
     }
-    
-    .formula-price-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 20px 0;
-      flex-wrap: wrap;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="main-content">
-      <div id="timer">00:00.0</div>
-      <div class="formula-price-container">
+      <div class="time-formula-price-row">
+        <div id="timer">00:00.0</div>
         <div id="formel"><span style="display: inline-block; text-align: center; vertical-align: middle;"><span style="display: block; border-bottom: 1px solid black; padding: 0 3px;">100</span><span style="display: block; padding: 0 3px;">1 + 0.005 · e<sup><span style="color: #f44336;">0</span>/80</sup></span></span></div>
         <div class="equals-sign">=</div>
         <div id="preisgeld">100.00 €</div>
