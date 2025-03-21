@@ -124,6 +124,8 @@
       border-radius: 8px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.05);
       background-color: white;
+      width: 100%;
+      height: auto;
     }
     
     .controls {
@@ -204,7 +206,7 @@
         <div class="equals-sign">=</div>
         <div id="preisgeld">100.00 €</div>
       </div>
-      <canvas id="graph" width="800" height="400"></canvas>
+      <canvas id="graph" width="1600" height="800"></canvas>
     </div>
     
     <div class="controls-container">
@@ -223,6 +225,25 @@
     const preisEl = document.getElementById('preisgeld');
     const canvas = document.getElementById('graph');
     const ctx = canvas.getContext('2d');
+    
+    // Canvas-Auflösung anpassen
+    function adjustCanvasResolution() {
+      // Für HD-Displays die Pixeldichte anpassen
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      // Logische Größe des Canvas aktualisieren (CSS-Pixel)
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      // Skalierung des Kontexts für korrekte Auflösung
+      ctx.scale(dpr, dpr);
+      
+      // CSS-Größe bleibt gleich (über CSS gesteuert)
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+    
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -450,7 +471,14 @@
     // Initialisierung
     updateFormel(0);
     preisEl.textContent = formatPreisgeld(maxPreisgeld);
+    adjustCanvasResolution();
     zeichneGraph();
+    
+    // Event-Listener für Größenänderungen
+    window.addEventListener('resize', function() {
+      adjustCanvasResolution();
+      zeichneGraph();
+    });
   </script>
 </body>
 </html>
