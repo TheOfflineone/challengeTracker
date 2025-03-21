@@ -270,10 +270,41 @@
       justify-content: space-between;
       align-items: center;
       transition: all 0.3s ease;
-      cursor: grab;
+      cursor: default;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       position: relative;
-      touch-action: none; /* Verhindert Scrolling während Touch-Drag */
+      touch-action: auto; /* Erlaubt normales Scrollen auf dem Item */
+    }
+    
+    .drag-handle {
+      width: 16px;
+      height: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+      margin-right: 8px;
+      touch-action: none; /* Verhindert Scrolling nur auf dem Handle */
+    }
+    
+    .drag-handle::before,
+    .drag-handle::after {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: #aaa;
+      margin: 1px 0;
+      box-shadow: 0 -8px 0 #aaa, 0 8px 0 #aaa;
+    }
+    
+    .drag-handle:hover {
+      opacity: 0.8;
+    }
+    
+    .challenge-item.dragging .drag-handle {
+      cursor: grabbing;
     }
     
     .challenge-item:hover {
@@ -678,8 +709,6 @@
       challenges.forEach((challenge, index) => {
         const item = document.createElement('div');
         item.className = 'challenge-item';
-        // Nur Challenges ziehbar machen, die nicht abgeschlossen und nicht begonnen wurden
-        item.draggable = !challenge.completed && !challenge.hasBeenStarted;
         item.dataset.index = index;
         
         if (index === activeChallenge) {
@@ -694,7 +723,11 @@
         const isFirstIncomplete = !challenge.completed && 
           challenges.findIndex(c => !c.completed) === index;
         
+        // Drag-Handle nur für bewegbare Items anzeigen
+        const canBeMoved = !challenge.completed && !challenge.hasBeenStarted;
+        
         item.innerHTML = `
+          ${canBeMoved ? '<div class="drag-handle"></div>' : ''}
           <span class="challenge-name">${challenge.name}</span>
           <span class="challenge-time">${formatTime(challenge.time)}</span>
           <button class="complete-btn" title="Challenge abschließen" 
@@ -707,15 +740,43 @@
           completeChallenge(index);
         });
         
-        // Drag-and-Drop-Event-Handler
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
-        
-        // Touch-Event-Handler für mobile Geräte
-        if (!challenge.completed && !challenge.hasBeenStarted) {
-          item.addEventListener('touchstart', handleTouchStart);
-          item.addEventListener('touchmove', handleTouchMove);
-          item.addEventListener('touchend', handleTouchEnd);
+        // Drag-and-Drop nur für Items, die einen Handle haben
+        if (canBeMoved) {
+          const dragHandle = item.querySelector('.drag-handle');
+          
+          // Drag-Events für den Handle
+          dragHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            item.draggable = true;
+          });
+          
+          item.addEventListener('dragstart', handleDragStart);
+          item.addEventListener('dragend', handleDragEnd);
+          
+          // Touch-Event-Handler für mobile Geräte
+          dragHandle.addEventListener('touchstart', (e) => {
+            handleTouchStart.call(item, e);
+          });
+          
+          dragHandle.addEventListener('touchmove', (e) => {
+            handleTouchMove.call(item, e);
+          });
+          
+          dragHandle.addEventListener('touchend', (e) => {
+            handleTouchEnd.call(item, e);
+          });
+          
+          // Deaktiviere draggable wenn die Maus losgelassen wird
+          dragHandle.addEventListener('mouseup', () => {
+            item.draggable = false;
+          });
+          
+          // Deaktiviere draggable wenn die Maus das Element verlässt
+          dragHandle.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+              item.draggable = false;
+            }, 100);
+          });
         }
         
         challengeList.appendChild(item);
@@ -1122,12 +1183,13 @@
     
     // Touch-Event-Handler für mobile Geräte
     function handleTouchStart(e) {
+      // Nur verarbeiten, wenn das TouchEvent vom Handle kommt
       if ((isRunning && this.dataset.index == activeChallenge) || 
           challenges[this.dataset.index].hasBeenStarted) {
         return;
       }
       
-      e.preventDefault(); // Verhindert Scrollen
+      e.preventDefault(); // Verhindert Scrollen nur auf dem Handle
       
       draggedItem = this;
       draggedIndex = parseInt(this.dataset.index);
