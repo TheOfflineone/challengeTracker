@@ -744,14 +744,17 @@
         if (canBeMoved) {
           const dragHandle = item.querySelector('.drag-handle');
           
-          // Drag-Events für den Handle
+          // Drag-Events für den Handle (Desktop)
           dragHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
             item.draggable = true;
           });
           
+          // Dragstart und dragend direkt auf dem Item (ohne .call)
           item.addEventListener('dragstart', handleDragStart);
-          item.addEventListener('dragend', handleDragEnd);
+          item.addEventListener('dragend', (e) => {
+            handleDragEnd.call(item, e);
+            item.draggable = false;
+          });
           
           // Touch-Event-Handler für mobile Geräte
           dragHandle.addEventListener('touchstart', (e) => {
@@ -767,15 +770,10 @@
           });
           
           // Deaktiviere draggable wenn die Maus losgelassen wird
-          dragHandle.addEventListener('mouseup', () => {
-            item.draggable = false;
-          });
-          
-          // Deaktiviere draggable wenn die Maus das Element verlässt
-          dragHandle.addEventListener('mouseleave', () => {
-            setTimeout(() => {
+          window.addEventListener('mouseup', () => {
+            if (item && item.draggable) {
               item.draggable = false;
-            }, 100);
+            }
           });
         }
         
@@ -822,8 +820,10 @@
         this.classList.add('dragging');
       }, 0);
       
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', this.innerHTML);
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+      }
     }
     
     function handleDragEnd() {
