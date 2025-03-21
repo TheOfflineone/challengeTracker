@@ -208,7 +208,7 @@
         <div class="equals-sign">=</div>
         <div id="preisgeld">100.00 €</div>
       </div>
-      <canvas id="graph" width="1600" height="800"></canvas>
+      <canvas id="graph" width="800" height="400"></canvas>
     </div>
     
     <div class="controls-container">
@@ -227,21 +227,6 @@
     const preisEl = document.getElementById('preisgeld');
     const canvas = document.getElementById('graph');
     const ctx = canvas.getContext('2d');
-    
-    // Canvas-Auflösung anpassen
-    function adjustCanvasResolution() {
-      // Einfacherer Ansatz für bessere Kompatibilität
-      const container = document.querySelector('.main-content');
-      if (container) {
-        // Feste Dimensionen, die gut auf dem iPad funktionieren
-        canvas.width = 800;
-        canvas.height = 400;
-        
-        // CSS kontrolliert das Aussehen
-        canvas.style.width = '100%';
-        canvas.style.height = 'auto';
-      }
-    }
     
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
@@ -266,143 +251,137 @@
     
     // Graph zeichnen
     function zeichneGraph() {
-      if (!ctx) return; // Sicherheitsprüfung
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      try {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Hintergrund mit Raster
-        ctx.fillStyle = '#fafafa';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Raster zeichnen
-        ctx.beginPath();
-        ctx.strokeStyle = '#eeeeee';
-        ctx.lineWidth = 1;
-        
-        // Vertikale Linien
-        for (let i = 0; i <= 15; i++) {
-          const pixelProSekunde = (canvas.width - 70) / 900;
-          const x = 50 + (i * 60 * pixelProSekunde);
-          ctx.moveTo(x, 20);
-          ctx.lineTo(x, canvas.height - 50);
-        }
-        
-        // Horizontale Linien
-        for (let i = 0; i <= 100; i += 20) {
-          const y = canvas.height - 50 - (i * 2.5);
-          ctx.moveTo(50, y);
-          ctx.lineTo(canvas.width - 20, y);
-        }
-        
-        ctx.stroke();
-        
-        // Achsen zeichnen
-        ctx.beginPath();
-        ctx.moveTo(50, 20);
-        ctx.lineTo(50, canvas.height - 50);
-        ctx.lineTo(canvas.width - 20, canvas.height - 50);
-        ctx.strokeStyle = '#aaa';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // Beschriftungen
-        ctx.fillStyle = '#555';
-        ctx.font = '12px Montserrat';
-        ctx.fillText('Preisgeld (€)', 10, 9);
-        ctx.fillText('Zeit (Minuten)', canvas.width - 100, canvas.height - 15);
-        
-        // Y-Achse Markierungen
-        for (let i = 0; i <= 100; i += 20) {
-          const y = canvas.height - 50 - (i * 2.5);
-          ctx.beginPath();
-          ctx.moveTo(45, y);
-          ctx.lineTo(55, y);
-          ctx.stroke();
-          ctx.fillText(i, 25, y + 4);
-        }
-        
-        // X-Achse Markierungen - jetzt bis 15 Minuten
+      // Hintergrund mit Raster
+      ctx.fillStyle = '#fafafa';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Raster zeichnen
+      ctx.beginPath();
+      ctx.strokeStyle = '#eeeeee';
+      ctx.lineWidth = 1;
+      
+      // Vertikale Linien
+      for (let i = 0; i <= 15; i++) {
         const pixelProSekunde = (canvas.width - 70) / 900;
-        for (let i = 0; i <= 15; i++) {
-          const x = 50 + (i * 60 * pixelProSekunde);
-          ctx.beginPath();
-          ctx.moveTo(x, canvas.height - 45);
-          ctx.lineTo(x, canvas.height - 55);
-          ctx.stroke();
-          
-          // Verbesserte Positionierung der X-Achsen-Beschriftungen
-          ctx.fillText(i, x - 3, canvas.height - 30);
-        }
-        
-        // Funktionsgraph zeichnen mit Gradient
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, 'rgba(44, 119, 77, 0.8)');
-        gradient.addColorStop(1, 'rgba(44, 119, 77, 0.2)');
-        
-        // Füllbereich für den Graphen
+        const x = 50 + (i * 60 * pixelProSekunde);
+        ctx.moveTo(x, 20);
+        ctx.lineTo(x, canvas.height - 50);
+      }
+      
+      // Horizontale Linien
+      for (let i = 0; i <= 100; i += 20) {
+        const y = canvas.height - 50 - (i * 2.5);
+        ctx.moveTo(50, y);
+        ctx.lineTo(canvas.width - 20, y);
+      }
+      
+      ctx.stroke();
+      
+      // Achsen zeichnen
+      ctx.beginPath();
+      ctx.moveTo(50, 20);
+      ctx.lineTo(50, canvas.height - 50);
+      ctx.lineTo(canvas.width - 20, canvas.height - 50);
+      ctx.strokeStyle = '#aaa';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Beschriftungen
+      ctx.fillStyle = '#555';
+      ctx.font = '12px Montserrat';
+      ctx.fillText('Preisgeld (€)', 10, 9);
+      ctx.fillText('Zeit (Minuten)', canvas.width - 100, canvas.height - 15);
+      
+      // Y-Achse Markierungen
+      for (let i = 0; i <= 100; i += 20) {
+        const y = canvas.height - 50 - (i * 2.5);
         ctx.beginPath();
-        ctx.moveTo(50, canvas.height - 50);
-        
-        for (let x = 0; x <= 900; x += 5) {
-          const preis = berechnePreisgeld(x);
-          const graphX = 50 + (x * pixelProSekunde);
-          const graphY = canvas.height - 50 - (preis * 2.5);
-          ctx.lineTo(graphX, graphY);
-        }
-        
-        ctx.lineTo(50 + (900 * pixelProSekunde), canvas.height - 50);
-        ctx.closePath();
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        
-        // Linie des Graphen
+        ctx.moveTo(45, y);
+        ctx.lineTo(55, y);
+        ctx.stroke();
+        ctx.fillText(i, 25, y + 4);
+      }
+      
+      // X-Achse Markierungen - jetzt bis 15 Minuten
+      const pixelProSekunde = (canvas.width - 70) / 900;
+      for (let i = 0; i <= 15; i++) {
+        const x = 50 + (i * 60 * pixelProSekunde);
         ctx.beginPath();
-        ctx.moveTo(50, canvas.height - 50 - (maxPreisgeld * 2.5));
-        
-        for (let x = 0; x <= 900; x += 5) {
-          const preis = berechnePreisgeld(x);
-          const graphX = 50 + (x * pixelProSekunde);
-          const graphY = canvas.height - 50 - (preis * 2.5);
-          
-          ctx.lineTo(graphX, graphY);
-        }
-        
-        ctx.strokeStyle = '#2c7';
-        ctx.lineWidth = 3;
+        ctx.moveTo(x, canvas.height - 45);
+        ctx.lineTo(x, canvas.height - 55);
         ctx.stroke();
         
-        // Aktuellen Punkt zeichnen wenn Timer läuft
-        if (elapsedTime > 0) {
-          const secs = elapsedTime / 1000;
-          const preis = berechnePreisgeld(secs);
+        // Verbesserte Positionierung der X-Achsen-Beschriftungen
+        ctx.fillText(i, x - 3, canvas.height - 30);
+      }
+      
+      // Funktionsgraph zeichnen mit Gradient
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, 'rgba(44, 119, 77, 0.8)');
+      gradient.addColorStop(1, 'rgba(44, 119, 77, 0.2)');
+      
+      // Füllbereich für den Graphen
+      ctx.beginPath();
+      ctx.moveTo(50, canvas.height - 50);
+      
+      for (let x = 0; x <= 900; x += 5) {
+        const preis = berechnePreisgeld(x);
+        const graphX = 50 + (x * pixelProSekunde);
+        const graphY = canvas.height - 50 - (preis * 2.5);
+        ctx.lineTo(graphX, graphY);
+      }
+      
+      ctx.lineTo(50 + (900 * pixelProSekunde), canvas.height - 50);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Linie des Graphen
+      ctx.beginPath();
+      ctx.moveTo(50, canvas.height - 50 - (maxPreisgeld * 2.5));
+      
+      for (let x = 0; x <= 900; x += 5) {
+        const preis = berechnePreisgeld(x);
+        const graphX = 50 + (x * pixelProSekunde);
+        const graphY = canvas.height - 50 - (preis * 2.5);
+        
+        ctx.lineTo(graphX, graphY);
+      }
+      
+      ctx.strokeStyle = '#2c7';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      
+      // Aktuellen Punkt zeichnen wenn Timer läuft
+      if (elapsedTime > 0) {
+        const secs = elapsedTime / 1000;
+        const preis = berechnePreisgeld(secs);
+        
+        currentPosition.x = 50 + (secs * pixelProSekunde);
+        currentPosition.y = canvas.height - 50 - (preis * 2.5);
+        
+        if (currentPosition.x <= canvas.width - 20) {
+          // Schatten
+          ctx.beginPath();
+          ctx.arc(currentPosition.x, currentPosition.y, 10, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(244, 67, 54, 0.3)';
+          ctx.fill();
           
-          currentPosition.x = 50 + (secs * pixelProSekunde);
-          currentPosition.y = canvas.height - 50 - (preis * 2.5);
+          // Punkt
+          ctx.beginPath();
+          ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#f44336';
+          ctx.fill();
           
-          if (currentPosition.x <= canvas.width - 20) {
-            // Schatten
-            ctx.beginPath();
-            ctx.arc(currentPosition.x, currentPosition.y, 10, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(244, 67, 54, 0.3)';
-            ctx.fill();
-            
-            // Punkt
-            ctx.beginPath();
-            ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = '#f44336';
-            ctx.fill();
-            
-            // Weißer Rand
-            ctx.beginPath();
-            ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-          }
+          // Weißer Rand
+          ctx.beginPath();
+          ctx.arc(currentPosition.x, currentPosition.y, 6, 0, Math.PI * 2);
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 2;
+          ctx.stroke();
         }
-      } catch (error) {
-        console.error('Fehler beim Zeichnen des Graphen:', error);
       }
     }
     
@@ -477,32 +456,16 @@
     updateFormel(0);
     preisEl.textContent = formatPreisgeld(maxPreisgeld);
     
-    // Canvas erst initialisieren, wenn DOM vollständig geladen ist
-    window.addEventListener('DOMContentLoaded', function() {
-      setTimeout(function() {
-        adjustCanvasResolution();
-        zeichneGraph();
-      }, 100);
-    });
-    
-    // Sofort auch versuchen zu initialisieren, falls DOMContentLoaded bereits ausgelöst wurde
-    adjustCanvasResolution();
-    zeichneGraph();
+    // Einfache Initialisierung
+    setTimeout(function() {
+      zeichneGraph();
+    }, 500);
     
     // Event-Listener für Größenänderungen
     window.addEventListener('resize', function() {
       setTimeout(function() {
-        adjustCanvasResolution();
         zeichneGraph();
-      }, 100);
-    });
-    
-    // Zusätzlicher Event-Listener für Orientierungsänderungen bei mobilen Geräten
-    window.addEventListener('orientationchange', function() {
-      setTimeout(function() {
-        adjustCanvasResolution();
-        zeichneGraph();
-      }, 300);
+      }, 500);
     });
   </script>
 </body>
