@@ -446,7 +446,6 @@
     // Speicherung der Challenges
     let challenges = [];
     let activeChallenge = null;
-    let totalTimeMs = 0;
     
     // Parameter für die Preisberechnung (wie in GeoGebra)
     const maxPreisgeld = 100;
@@ -563,11 +562,21 @@
       ctx.lineWidth = 3;
       ctx.stroke();
       
-      // Aktuellen Punkt zeichnen für die Gesamtzeit
-      const totalSeconds = totalTimeMs / 1000 + (isRunning ? elapsedTime / 1000 : 0);
-      const totalPreis = berechnePreisgeld(totalSeconds);
+      // Berechne die Gesamtzeit aller Challenges (inklusive nicht abgeschlossener)
+      let totalSecondsAll = 0;
       
-      currentPosition.x = 50 + (totalSeconds * pixelProSekunde);
+      challenges.forEach((challenge, index) => {
+        if (index === activeChallenge && isRunning) {
+          totalSecondsAll += elapsedTime / 1000;
+        } else {
+          totalSecondsAll += challenge.time / 1000;
+        }
+      });
+      
+      // Aktuellen Punkt zeichnen für die Gesamtzeit
+      const totalPreis = berechnePreisgeld(totalSecondsAll);
+      
+      currentPosition.x = 50 + (totalSecondsAll * pixelProSekunde);
       currentPosition.y = canvas.height - 50 - (totalPreis * 2.5);
       
       if (currentPosition.x <= canvas.width - 20) {
@@ -614,23 +623,35 @@
     
     // Timer aktualisieren
     function updateTimer() {
-      const currentTime = Date.now();
-      elapsedTime = currentTime - startTime;
-      
-      // Aktuellen Timer für die aktive Challenge in den Challenge-Einträgen aktualisieren
-      if (activeChallenge !== null && challenges[activeChallenge]) {
-        challenges[activeChallenge].time = elapsedTime;
-        updateChallengeItem(activeChallenge);
+      // Wenn gerade eine Challenge läuft, aktualisiere die verstrichene Zeit
+      if (isRunning && activeChallenge !== null) {
+        const currentTime = Date.now();
+        elapsedTime = currentTime - startTime;
+        
+        // Aktuellen Timer für die aktive Challenge in den Challenge-Einträgen aktualisieren
+        if (challenges[activeChallenge]) {
+          challenges[activeChallenge].time = elapsedTime;
+          updateChallengeItem(activeChallenge);
+        }
       }
       
-      // Gesamtzeit berechnen
-      const totalWithCurrentMs = totalTimeMs + elapsedTime;
+      // Gesamtzeit aller Challenges berechnen (inklusive nicht fertiggestellter)
+      let totalWithAllMs = 0;
+      
+      // Summer aller Challenge-Zeiten
+      challenges.forEach((challenge, index) => {
+        if (index === activeChallenge && isRunning) {
+          totalWithAllMs += elapsedTime; // Für die aktive Challenge die aktuelle Zeit nehmen
+        } else {
+          totalWithAllMs += challenge.time; // Für alle anderen Challenges die gespeicherte Zeit nehmen
+        }
+      });
       
       // Gesamtzeit im Timer anzeigen
-      timerEl.textContent = formatTime(totalWithCurrentMs);
+      timerEl.textContent = formatTime(totalWithAllMs);
       
       // Formel und Preisgeld aktualisieren basierend auf der Gesamtzeit
-      const totalSeconds = totalWithCurrentMs / 1000;
+      const totalSeconds = totalWithAllMs / 1000;
       updateFormel(totalSeconds);
       const preis = berechnePreisgeld(totalSeconds);
       preisEl.textContent = formatPreisgeld(preis);
@@ -667,24 +688,16 @@
           item.classList.add('challenge-complete');
         }
         
+        // Bestimme, ob es die erste nicht abgeschlossene Challenge ist
+        const isFirstIncomplete = !challenge.completed && 
+          challenges.findIndex(c => !c.completed) === index;
+        
         item.innerHTML = `
           <span class="challenge-name">${challenge.name}</span>
           <span class="challenge-time">${formatTime(challenge.time)}</span>
-          <button class="complete-btn" title="Challenge abschließen" ${challenge.completed ? 'disabled' : ''}>&check;</button>
+          <button class="complete-btn" title="Challenge abschließen" 
+            ${challenge.completed || !isFirstIncomplete ? 'disabled' : ''}>&check;</button>
         `;
-        
-        // Eine nicht abgeschlossene Challenge beim Klick aktivieren
-        if (!challenge.completed) {
-          item.addEventListener('click', (e) => {
-            // Nur fortfahren, wenn nicht auf den Complete-Button geklickt wurde
-            if (!e.target.classList.contains('complete-btn')) {
-              activeChallenge = index;
-              elapsedTime = challenges[index].time;
-              timerEl.textContent = formatTime(totalTimeMs + elapsedTime);
-              renderChallenges();
-            }
-          });
-        }
         
         // Klick auf Complete-Button schließt Challenge ab
         item.querySelector('.complete-btn').addEventListener('click', (e) => {
@@ -698,6 +711,21 @@
         
         challengeList.appendChild(item);
       });
+      
+      // Aktualisiere die aktive Challenge auf die erste nicht abgeschlossene
+      const nextIndex = challenges.findIndex(c => !c.completed);
+      if (nextIndex !== -1 && activeChallenge !== nextIndex) {
+        activeChallenge = nextIndex;
+        // Bug-Fix: Sicherstellen, dass wir die richtige Zeit verwenden
+        elapsedTime = challenges[nextIndex].time;
+      } else if (nextIndex === -1) {
+        // Keine offenen Challenges mehr
+        activeChallenge = null;
+        elapsedTime = 0;
+      }
+      
+      // Aktualisiere die UI
+      updateTimer();
       
       // Drag-and-Drop-Zielbereich
       challengeList.addEventListener('dragover', handleDragOver);
@@ -792,6 +820,13 @@
           activeChallenge++;
         }
         
+        // Nach Verschieben die erste nicht abgeschlossene Challenge aktivieren
+        const firstIncompleteIndex = challenges.findIndex(c => !c.completed);
+        if (firstIncompleteIndex !== -1) {
+          activeChallenge = firstIncompleteIndex;
+          elapsedTime = challenges[firstIncompleteIndex].time;
+        }
+        
         renderChallenges();
       }
     }
@@ -874,13 +909,18 @@
       // Challenge als abgeschlossen markieren
       challenges[index].completed = true;
       
-      // Zeit zur Gesamtzeit hinzufügen
-      totalTimeMs += challenges[index].time;
-      
-      // Wenn das die aktive Challenge war, zurücksetzen
+      // Wenn das die aktive Challenge war, setze die nächste als aktiv
       if (index === activeChallenge) {
-        activeChallenge = null;
-        elapsedTime = 0;
+        // Finde die nächste offene Challenge
+        const nextIndex = challenges.findIndex(c => !c.completed);
+        if (nextIndex !== -1) {
+          activeChallenge = nextIndex;
+          elapsedTime = challenges[nextIndex].time;
+        } else {
+          // Keine offenen Challenges mehr
+          activeChallenge = null;
+          elapsedTime = 0;
+        }
       }
       
       // UI aktualisieren
@@ -890,10 +930,18 @@
     
     // Preisgeld und Graph basierend auf Gesamtzeit aktualisieren
     function updatePreisgeldAndGraph() {
-      const totalSeconds = totalTimeMs / 1000;
+      // Gesamtzeit aller Challenges berechnen
+      let totalWithAllMs = 0;
+      
+      // Summer aller Challenge-Zeiten
+      challenges.forEach((challenge, index) => {
+        totalWithAllMs += challenge.time;
+      });
+      
+      const totalSeconds = totalWithAllMs / 1000;
       
       // Gesamtzeit im Timer anzeigen
-      timerEl.textContent = formatTime(totalTimeMs);
+      timerEl.textContent = formatTime(totalWithAllMs);
       
       updateFormel(totalSeconds);
       const preis = berechnePreisgeld(totalSeconds);
@@ -905,15 +953,12 @@
     // Event-Handler
     startBtn.addEventListener('click', () => {
       if (!isRunning) {
-        if (activeChallenge === null && challenges.length > 0) {
-          // Finde die erste nicht abgeschlossene Challenge
-          const nextIndex = challenges.findIndex(c => !c.completed);
-          if (nextIndex !== -1) {
-            activeChallenge = nextIndex;
-          }
-        }
+        // Finde die erste nicht abgeschlossene Challenge
+        const nextIndex = challenges.findIndex(c => !c.completed);
         
-        if (activeChallenge !== null) {
+        if (nextIndex !== -1) {
+          // Setze sie als aktive Challenge
+          activeChallenge = nextIndex;
           isRunning = true;
           startTime = Date.now() - challenges[activeChallenge].time;
           elapsedTime = challenges[activeChallenge].time;
@@ -921,6 +966,9 @@
           startBtn.disabled = true;
           stopBtn.disabled = false;
           renderChallenges();
+        } else {
+          // Keine offenen Challenges vorhanden
+          alert("Bitte füge zuerst eine Challenge hinzu!");
         }
       }
     });
@@ -937,7 +985,6 @@
       // Alle Challenges zurücksetzen
       challenges = [];
       activeChallenge = null;
-      totalTimeMs = 0;
       elapsedTime = 0;
       
       // UI aktualisieren
