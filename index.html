@@ -301,7 +301,6 @@
     
     .challenge-complete {
       opacity: 0.7;
-      text-decoration: line-through;
     }
     
     .challenge-name {
@@ -664,7 +663,8 @@
       challenges.push({
         name: name,
         time: 0,
-        completed: false
+        completed: false,
+        hasBeenStarted: false
       });
       
       renderChallenges();
@@ -677,7 +677,8 @@
       challenges.forEach((challenge, index) => {
         const item = document.createElement('div');
         item.className = 'challenge-item';
-        item.draggable = !challenge.completed;
+        // Nur Challenges ziehbar machen, die nicht abgeschlossen und nicht begonnen wurden
+        item.draggable = !challenge.completed && !challenge.hasBeenStarted;
         item.dataset.index = index;
         
         if (index === activeChallenge) {
@@ -737,7 +738,9 @@
     let draggedIndex = -1;
     
     function handleDragStart(e) {
-      if (isRunning && this.dataset.index == activeChallenge) {
+      // Wenn eine Challenge läuft oder bereits begonnen wurde, verhindern wir das Ziehen
+      if ((isRunning && this.dataset.index == activeChallenge) || 
+          challenges[this.dataset.index].hasBeenStarted) {
         e.preventDefault();
         return;
       }
@@ -778,10 +781,47 @@
       // Finde das nächste Element
       const afterElement = getAfterElement(challengeList, e.clientY);
       
+      // Prüfe, ob das Element nach einer abgeschlossenen Challenge oder 
+      // nach einer bereits gestarteten Challenge platziert werden würde
+      if (afterElement) {
+        const afterIndex = parseInt(afterElement.dataset.index);
+        const afterIsCompleted = challenges[afterIndex].completed;
+        const afterHasBeenStarted = challenges[afterIndex].hasBeenStarted;
+        
+        // Wenn das Element nach einer abgeschlossenen oder gestarteten Challenge platziert werden würde,
+        // suche nach einem geeigneten Platz vor diesen Challenges
+        if (afterIsCompleted || afterHasBeenStarted) {
+          // Finde das letzte Element, das weder abgeschlossen noch gestartet wurde
+          const lastMovableIndex = findLastMovableIndex();
+          if (lastMovableIndex !== -1) {
+            const lastMovableItem = Array.from(challengeList.children).find(
+              item => parseInt(item.dataset.index) === lastMovableIndex
+            );
+            if (lastMovableItem) {
+              // Platzhalter nach dem letzten bewegbaren Element einfügen
+              challengeList.insertBefore(createPlaceholder(), lastMovableItem.nextSibling);
+              return;
+            }
+          }
+        }
+      }
+      
       // Füge Platzhalter ein
       if (afterElement) {
         challengeList.insertBefore(createPlaceholder(), afterElement);
       } else {
+        // Prüfe, ob es abgeschlossene oder gestartete Challenges gibt
+        const firstUnmovableIndex = challenges.findIndex(c => c.completed || c.hasBeenStarted);
+        if (firstUnmovableIndex !== -1 && firstUnmovableIndex < challenges.length - 1) {
+          const firstUnmovableItem = Array.from(challengeList.children).find(
+            item => parseInt(item.dataset.index) === firstUnmovableIndex
+          );
+          if (firstUnmovableItem) {
+            challengeList.insertBefore(createPlaceholder(), firstUnmovableItem);
+            return;
+          }
+        }
+        
         challengeList.appendChild(createPlaceholder());
       }
     }
@@ -801,9 +841,34 @@
       
       if (afterElement) {
         targetIndex = parseInt(afterElement.dataset.index);
-        if (targetIndex > draggedIndex) targetIndex--;
+        
+        // Prüfe, ob das Ziel eine abgeschlossene oder gestartete Challenge ist
+        if (challenges[targetIndex].completed || challenges[targetIndex].hasBeenStarted) {
+          // Finde den letzten bewegbaren Index
+          const lastMovableIndex = findLastMovableIndex();
+          
+          if (lastMovableIndex !== -1) {
+            // Setze Target-Index auf nach dem letzten bewegbaren Element
+            targetIndex = lastMovableIndex + 1;
+            if (targetIndex > draggedIndex) targetIndex--;
+          } else {
+            // Wenn keine bewegbaren Elemente vorhanden sind, setze Target-Index auf 0
+            targetIndex = 0;
+          }
+        } else if (targetIndex > draggedIndex) {
+          targetIndex--;
+        }
       } else {
-        targetIndex = challenges.length - 1;
+        // Prüfe, ob es abgeschlossene oder gestartete Challenges gibt
+        const firstUnmovableIndex = challenges.findIndex(c => c.completed || c.hasBeenStarted);
+        
+        if (firstUnmovableIndex !== -1) {
+          // Setze Target-Index auf den Index vor der ersten unveränderlichen Challenge
+          targetIndex = firstUnmovableIndex - 1;
+        } else {
+          // Wenn keine unveränderlichen Challenges vorhanden sind, setze Target-Index auf das Ende
+          targetIndex = challenges.length - 1;
+        }
       }
       
       // Verschiebe das Element in der challenges-Array
@@ -829,6 +894,27 @@
         
         renderChallenges();
       }
+    }
+    
+    // Hilfsfunktion: Finde den Index der letzten nicht abgeschlossenen Challenge
+    function findLastIncompleteIndex() {
+      for (let i = challenges.length - 1; i >= 0; i--) {
+        if (!challenges[i].completed) {
+          return i;
+        }
+      }
+      return -1;
+    }
+    
+    // Hilfsfunktion: Finde den Index der letzten bewegbaren Challenge
+    // (weder abgeschlossen noch bereits gestartet)
+    function findLastMovableIndex() {
+      for (let i = challenges.length - 1; i >= 0; i--) {
+        if (!challenges[i].completed && !challenges[i].hasBeenStarted) {
+          return i;
+        }
+      }
+      return -1;
     }
     
     function createPlaceholder() {
@@ -875,6 +961,8 @@
       startTime = Date.now();
       elapsedTime = challenges[index].time;
       isRunning = true;
+      // Markiere die Challenge als "bereits gestartet"
+      challenges[index].hasBeenStarted = true;
       timerInterval = setInterval(updateTimer, 100);
       startBtn.disabled = true;
       stopBtn.disabled = false;
@@ -962,6 +1050,8 @@
           isRunning = true;
           startTime = Date.now() - challenges[activeChallenge].time;
           elapsedTime = challenges[activeChallenge].time;
+          // Markiere die Challenge als "bereits gestartet"
+          challenges[activeChallenge].hasBeenStarted = true;
           timerInterval = setInterval(updateTimer, 100);
           startBtn.disabled = true;
           stopBtn.disabled = false;
